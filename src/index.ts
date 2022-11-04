@@ -3,7 +3,6 @@ import {getL2Network, Erc20Bridger, L1ToL2MessageStatus} from "@arbitrum/sdk";
 import { Erc20DepositParams, L1ToL2TxReqAndSignerProvider } from "@arbitrum/sdk/dist/lib/assetBridger/erc20Bridger";
 import { isL1ToL2TransactionRequest, L1ToL2TransactionRequest } from "@arbitrum/sdk/dist/lib/dataEntities/transactionRequest";
 import { SignerProviderUtils } from "@arbitrum/sdk/dist/lib/dataEntities/signerOrProvider";
-import { L1ContractCallTransaction } from "@arbitrum/sdk/dist/lib/message/L1Transaction";
 require('dotenv').config();
 
 const walletPrivateKey = process.env.PRIVKEY as string;
@@ -16,7 +15,7 @@ const main = async () => {
     const l2Network = await getL2Network(l2Provider);
     const erc20Bridge = new Erc20Bridger(l2Network);
     const erc20Address = "0x07865c6e87b9f70255377e024ace6630c1eaa37f";
-    const tokenDepositAmount = BigNumber.from(5);
+    const tokenDepositAmount = BigNumber.from(501);
 
     const params = {
         amount: tokenDepositAmount,
@@ -38,6 +37,8 @@ const main = async () => {
         l1Provider: l1p,
         from: fromAddress,
     });
+
+    console.log(tokenDeposit);
     console.log(tokenDeposit.txRequest.data);
 
     // const r = await deposit(erc20Bridge, params);
