@@ -13,41 +13,87 @@ const l1Wallet = new Wallet(walletPrivateKey, l1Provider);
 const l2Wallet = new Wallet(walletPrivateKey, l2Provider);
 
 const main = async () => {
+    // 1. Get Redeem Data
+    // const redeemData = await getRedeemData("0x34c02fe6e13849fac3097752f8f23df43650a6c848e45063596eb9dfa665bb59");
+    // console.log(redeemData);
+
+    // 2. Redeem Stuck Deposit
+    // const hash = await redeem("0x34c02fe6e13849fac3097752f8f23df43650a6c848e45063596eb9dfa665bb59");
+
+    // 3. get deposit request data 
     // const tokenDeposit = await deposit();
-    const r = await redeem("0x84831a641dd7877219b2e21121f3d6328f80ec07e20b5124b307125fc99528e8");
+
+    // 4. getL2MessageStatus
+    // while (true) {
+    //     const status = await getL2Status("0x5747721fe042eb98c8875087f7cba52b87a25039c0a8cfb4e105cd987ffb1c73");
+    //     console.log(`time: ${new Date()} status: ${status}`);
+    //     await delay(10000);
+    // }
 };
+
+const getRedeemData = async (txHash: string): Promise<string> => {
+    if (!txHash.startsWith('0x') || txHash.trim().length != 66) {
+        throw new Error(`invalid tx hash: ${txHash} `);
+    }
+    console.log("retriving status");
+
+    const receipt = await l1Provider.getTransactionReceipt(txHash);
+    const l1Receipt = new L1TransactionReceipt(receipt);
+    const messages = await l1Receipt.getL1ToL2Messages(l2Wallet);
+    const l1ToL2Msg = messages[0];
+    const redeemData = l1ToL2Msg.retryableCreationId;
+    return redeemData;
+}
+
+const getL2Status = async (txHash: string): Promise<L1ToL2MessageStatus> => {
+    if (!txHash.startsWith('0x') || txHash.trim().length != 66) {
+        throw new Error(`invalid tx hash: ${txHash} `);
+    }
+    console.log("retriving status");
+
+    const receipt = await l1Provider.getTransactionReceipt(txHash);
+    const l1Receipt = new L1TransactionReceipt(receipt);
+    const messages = await l1Receipt.getL1ToL2Messages(l2Wallet);
+    const l1ToL2Msg = messages[0];
+    console.log("got message");
+
+    const status1 = await l1ToL2Msg.status();
+    // const messageRec = await l1ToL2Msg.waitForStatus();
+    // const status2 = await messageRec.status;
+    return status1;
+}
 
 const redeem = async (txHash : string): Promise<string> => {
     if (!txHash.startsWith('0x') || txHash.trim().length != 66) {
         throw new Error(`invalid tx hash: ${txHash} `);
-      }
-  
-      const receipt = await l1Provider.getTransactionReceipt(txHash);
-      const l1Receipt = new L1TransactionReceipt(receipt);
-  
-      const messages = await l1Receipt.getL1ToL2Messages(l2Wallet);
-      const message = await messages[0];
-      const messageRec = await message.waitForStatus();
-      const status = await messageRec.status;
-      if (status === L1ToL2MessageStatus.REDEEMED) {
+    }
+
+    const receipt = await l1Provider.getTransactionReceipt(txHash);
+    const l1Receipt = new L1TransactionReceipt(receipt);
+
+    const messages = await l1Receipt.getL1ToL2Messages(l2Wallet);
+    const message = await messages[0];
+    const messageRec = await message.waitForStatus();
+    const status = await messageRec.status;
+    if (status === L1ToL2MessageStatus.REDEEMED) {
         console.log(`L2 retryable txn is already executed`);
         return "";
-      } else {
+    } else {
         console.log(`L2 retryable txn failed with status ${L1ToL2MessageStatus[status]}`);
-      }
-      console.log(`Redeeming the ticket now`);
-      /**
-       * We use the redeem() method from Arbitrum SDK to manually redeem our ticket
-       */
-      const l2Tx = await message.redeem();
-      const l2Receipt = await l2Tx.waitForRedeem();
-      const l2TxHash = await l2Receipt.transactionHash;
-      console.log(
-          'The L2 side of your transaction is now execeuted:',
-          l2TxHash
-      );
-  
-      return l2TxHash;
+    }
+    console.log(`Redeeming the ticket now`);
+    /**
+     * We use the redeem() method from Arbitrum SDK to manually redeem our ticket
+     */
+    const l2Tx = await message.redeem();
+    const l2Receipt = await l2Tx.waitForRedeem();
+    const l2TxHash = await l2Receipt.transactionHash;
+    console.log(
+        'The L2 side of your transaction is now execeuted:',
+        l2TxHash
+    );
+
+    return l2TxHash;
 };
 
 const deposit = async (): Promise<L1ToL2TransactionRequest> => {
@@ -79,6 +125,9 @@ const deposit = async (): Promise<L1ToL2TransactionRequest> => {
     return tokenDeposit;
 }
 
+const delay = async (ms: number) => {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
 
 main()
     .then(() => process.exit(0))
