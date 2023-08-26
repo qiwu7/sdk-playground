@@ -1,6 +1,4 @@
-import { MerkleTreeWhitelist } from "./merkle_tree_whitelsite";
-import { ethers } from "ethers";
-import internal from "stream";
+import { MerkleTreeWhitelist } from "./merkle_tree_whitelist";
 
 const main = async () => {
     merkleTreeTest();
